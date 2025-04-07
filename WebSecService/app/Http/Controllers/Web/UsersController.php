@@ -19,10 +19,25 @@ class UsersController extends Controller {
 	use ValidatesRequests;
 
     public function list(Request $request) {
-        if(!auth()->user()->hasPermissionTo('show_users'))abort(401);
-        $query = User::select('*');
-        $query->when($request->keywords, 
-        fn($q)=> $q->where("name", "like", "%$request->keywords%"));
+        // Check if user is Admin or Employee
+        if (!auth()->user()->hasAnyRole(['Admin', 'Employee'])) {
+            abort(403, 'Only administrators and employees can view users');
+        }
+
+        $query = User::query();
+
+        // If user is Employee, only show Customers
+        if (auth()->user()->hasRole('Employee')) {
+            $query->whereHas('roles', function($q) {
+                $q->where('name', 'Customer');
+            });
+        }
+
+        // Apply search filter if keywords are provided
+        if ($request->has('keywords')) {
+            $query->where('name', 'like', "%{$request->keywords}%");
+        }
+
         $users = $query->get();
         return view('users.list', compact('users'));
     }
