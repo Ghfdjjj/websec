@@ -18,6 +18,14 @@
                     @endforeach
                 </td>
             </tr>
+            @if($user->roles()->where('name', 'Customer')->exists())
+            <tr>
+                <th>Credit Balance</th>
+                <td>
+                    <span class="badge bg-info">${{ number_format($user->credit_balance, 2) }}</span>
+                </td>
+            </tr>
+            @endif
             <tr>
                 <th>Permissions</th>
                 <td>
@@ -30,6 +38,11 @@
 
         <div class="row">
             <div class="col col-6">
+                @if(auth()->user()->roles()->where('name', 'Employee')->exists() && $user->roles()->where('name', 'Customer')->exists())
+                <a href="{{ route('credit.update_form', $user) }}" class="btn btn-warning">
+                    <i class="fas fa-money-bill-wave"></i> Update Credit
+                </a>
+                @endif
             </div>
             @if(auth()->user()->hasPermissionTo('admin_users')||auth()->id()==$user->id)
             <div class="col col-4">

@@ -3,6 +3,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\ProductsController;
 use App\Http\Controllers\Web\UsersController;
+use App\Http\Controllers\Web\CreditController;
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -23,6 +24,9 @@ Route::get('products', [ProductsController::class, 'list'])->name('products_list
 Route::get('products/edit/{product?}', [ProductsController::class, 'edit'])->name('products_edit');
 Route::post('products/save/{product?}', [ProductsController::class, 'save'])->name('products_save');
 Route::get('products/delete/{product}', [ProductsController::class, 'delete'])->name('products_delete');
+Route::post('products/buy/{product}', [ProductsController::class, 'buy'])
+    ->name('products.buy')
+    ->middleware('auth');
 
 Route::get('/', function () {
     return view('welcome');
@@ -45,3 +49,17 @@ Route::get('/prime', function () {
 Route::get('/test', function () {
     return view('test');
 });
+
+// Credit management routes
+Route::middleware(['auth'])->group(function () {
+    // Employee routes for credit management
+    Route::prefix('credit')->group(function () {
+        Route::get('/manage', [CreditController::class, 'manage'])->name('credit.manage');
+        Route::post('/update/{user}', [CreditController::class, 'update'])->name('credit.update');
+    });
+
+    // Customer route to view their own credit
+    Route::get('/my-credit', [CreditController::class, 'show'])->name('credit.show');
+});
+
+Route::get('/credit/update/{user}', [CreditController::class, 'updateForm'])->name('credit.update_form');

@@ -55,7 +55,7 @@
                 </div>
                 <div class="col col-sm-12 col-lg-8 mt-3">
                     <div class="row mb-2">
-					    <div class="col-8">
+					    <div class="col-6">
 					        <h3>{{$product->name}}</h3>
 					    </div>
 					    <div class="col col-2">
@@ -68,6 +68,14 @@
 					        <a href="{{route('products_delete', $product->id)}}" class="btn btn-danger form-control">Delete</a>
                             @endcan
 					    </div>
+                        <div class="col col-2">
+                            @role('Customer')
+                            <form action="{{ route('products.buy', $product->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-primary form-control">Buy</button>
+                            </form>
+                            @endrole
+                        </div>
 					</div>
 
                     <table class="table table-striped">
