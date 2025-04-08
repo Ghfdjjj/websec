@@ -6,16 +6,16 @@
         <h1>Users</h1>
     </div>
 </div>
-<form>
+<form action="{{ route('users') }}" method="GET">
     <div class="row">
         <div class="col col-sm-2">
-            <input name="keywords" type="text"  class="form-control" placeholder="Search Keywords" value="{{ request()->keywords }}" />
+            <input name="keywords" type="text" class="form-control" placeholder="Search Keywords" value="{{ request()->keywords }}" />
         </div>
         <div class="col col-sm-1">
             <button type="submit" class="btn btn-primary">Submit</button>
         </div>
         <div class="col col-sm-1">
-            <button type="reset" class="btn btn-danger">Reset</button>
+            <a href="{{ route('users') }}" class="btn btn-danger">Reset</a>
         </div>
     </div>
 </form>
