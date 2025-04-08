@@ -116,4 +116,25 @@ class CreditController extends Controller
 
         return view('credit.update_form', compact('user'));
     }
-} 
+    
+
+    public function resetCreditForm(User $user)
+    {
+        if (!$user->hasRole('Customer')) {
+            return redirect()->route('users')->with('error', 'Can only reset credit for customers.');
+        }
+    
+        $oldBalance = $user->credit_balance;
+        $user->credit_balance = 0;
+        $user->save();
+    
+        Log::info('Credit reset to zero', [
+            'admin_id' => auth()->id(),
+            'admin_name' => auth()->user()->name,
+            'customer_id' => $user->id,
+            'old_balance' => $oldBalance
+        ]);
+    
+        return redirect()->route('users')->with('success', 'Customer credit reset to 0 successfully.');
+    }
+    } 
