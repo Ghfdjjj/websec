@@ -39,7 +39,7 @@
         <div class="row">
             <div class="col col-6">
                 @if(auth()->user()->roles()->where('name', 'Employee')->exists() && $user->roles()->where('name', 'Customer')->exists())
-                <a href="{{ route('credit.update_form', $user) }}" class="btn btn-warning">
+                <a href="{{ route('credit.update_form', $user) }}" class="btn btn-warning mb-2">
                     <i class="fas fa-money-bill-wave"></i> Update Credit
                 </a>
                 <a href="{{ route('purchases.customer_history', $user) }}" class="btn btn-info">
