@@ -26,36 +26,36 @@
     </div>
 @endif
 
-<form action="{{ route('products_list') }}" method="GET" class="mb-4">
-    <div class="row g-3">
-        <div class="col-md-2">
+<form action="{{ route('products_list') }}" method="GET">
+    <div class="row">
+        <div class="col col-sm-2">
             <input name="keywords" type="text" class="form-control" placeholder="Search Keywords" value="{{ request()->keywords }}">
         </div>
-        <div class="col-md-2">
+        <div class="col col-sm-2">
             <input name="min_price" type="number" class="form-control" placeholder="Min Price" value="{{ request()->min_price }}">
         </div>
-        <div class="col-md-2">
+        <div class="col col-sm-2">
             <input name="max_price" type="number" class="form-control" placeholder="Max Price" value="{{ request()->max_price }}">
         </div>
-        <div class="col-md-2">
+        <div class="col col-sm-2">
             <select name="order_by" class="form-select">
                 <option value="">Order By</option>
                 <option value="name" {{ request()->order_by == "name" ? "selected" : "" }}>Name</option>
                 <option value="price" {{ request()->order_by == "price" ? "selected" : "" }}>Price</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col col-sm-2">
             <select name="order_direction" class="form-select">
                 <option value="">Order Direction</option>
-                <option value="ASC" {{ request()->order_direction == "ASC" ? "selected" : "" }}>Ascending</option>
-                <option value="DESC" {{ request()->order_direction == "DESC" ? "selected" : "" }}>Descending</option>
+                <option value="ASC" {{ request()->order_direction == "ASC" ? "selected" : "" }}>ASC</option>
+                <option value="DESC" {{ request()->order_direction == "DESC" ? "selected" : "" }}>DESC</option>
             </select>
         </div>
-        <div class="col-md-2">
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Search</button>
-                <a href="{{ route('products_list') }}" class="btn btn-secondary">Clear</a>
-            </div>
+        <div class="col col-sm-1">
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+        <div class="col col-sm-1">
+            <a href="{{ route('products_list') }}" class="btn btn-danger">Reset</a>
         </div>
     </div>
 </form>
