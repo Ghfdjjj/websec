@@ -52,6 +52,9 @@
           @can('delete_users')
           <a class="btn btn-danger" href='{{route('users_delete', [$user->id])}}'>Delete</a>
           @endcan
+          @if(auth()->user()->hasAnyRole(['Admin', 'Employee']))
+          <a class="btn btn-info" href='{{route('profile', [$user->id])}}'>Show Profile</a>
+          @endif
         </td>
       </tr>
       @endforeach

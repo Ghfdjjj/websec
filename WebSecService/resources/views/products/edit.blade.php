@@ -50,6 +50,9 @@
             <label for="stock" class="form-label">Stock:</label>
             <input type="number" class="form-control" placeholder="Stock" name="stock" required 
                    min="0" value="{{$product->stock}}">
+            <div class="form-text">
+                <i class="fas fa-info-circle"></i> Set the number of available items in store
+            </div>
         </div>
         <div class="col-4">
             <label for="photo" class="form-label">Photo URL:</label>

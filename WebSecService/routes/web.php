@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\ProductsController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\CreditController;
+use App\Http\Controllers\Web\PurchasesController;
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -50,6 +51,11 @@ Route::get('/test', function () {
     return view('test');
 });
 
+// Test route for POST requests
+Route::post('/test-post', function () {
+    return 'POST request received!';
+})->name('test.post');
+
 // Credit management routes
 Route::middleware(['auth'])->group(function () {
     // Employee routes for credit management
@@ -60,6 +66,20 @@ Route::middleware(['auth'])->group(function () {
 
     // Customer route to view their own credit
     Route::get('/my-credit', [CreditController::class, 'show'])->name('credit.show');
+    
+    // Customer purchase history
+    Route::get('/purchases/history', [PurchasesController::class, 'history'])->name('purchases.history');
+    
+    // Employee view of customer purchase history
+    Route::get('/purchases/customer/{user}', [PurchasesController::class, 'customerHistory'])
+        ->name('purchases.customer_history')
+        ->middleware('auth');
 });
 
 Route::get('/credit/update/{user}', [CreditController::class, 'updateForm'])->name('credit.update_form');
+
+// Product stock management routes (employee and admin only)
+Route::middleware(['auth', 'role:employee,admin'])->group(function () {
+    Route::get('/products/manage-stock', [ProductsController::class, 'manageStock'])->name('products.manage_stock');
+    Route::post('/products/{product}/update-stock', [ProductsController::class, 'updateStock'])->name('products.update_stock');
+});

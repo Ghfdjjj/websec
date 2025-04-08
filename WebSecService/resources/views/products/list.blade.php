@@ -1,5 +1,5 @@
 @extends('layouts.master')
-@section('title', 'Test Page')
+@section('title', 'Products')
 @section('content')
 <div class="row mt-2">
     <div class="col col-10">
@@ -11,6 +11,21 @@
         @endcan
     </div>
 </div>
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <form>
     <div class="row">
         <div class="col col-sm-2">

@@ -42,6 +42,9 @@
                 <a href="{{ route('credit.update_form', $user) }}" class="btn btn-warning">
                     <i class="fas fa-money-bill-wave"></i> Update Credit
                 </a>
+                <a href="{{ route('purchases.customer_history', $user) }}" class="btn btn-info">
+                    <i class="fas fa-history"></i> View Purchase History
+                </a>
                 @endif
             </div>
             @if(auth()->user()->hasPermissionTo('admin_users')||auth()->id()==$user->id)

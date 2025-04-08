@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Log;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\User;
+use App\Models\ProductPurchase;
 use App\Exceptions\InsufficientCreditException;
 
 class ProductsController extends Controller {
@@ -146,7 +148,8 @@ class ProductsController extends Controller {
 		}
 	}
 
-	public function buy($id) {
+	public function buy($id)
+	{
 		// Check if user is Customer
 		if (!auth()->user()->hasRole('Customer')) {
 			abort(403, 'Only customers can buy products');
@@ -155,8 +158,9 @@ class ProductsController extends Controller {
 		try {
 			DB::beginTransaction();
 
+			// Get the product with proper validation
 			$product = Product::where('id', $id)
-				->where('active', true)
+				->where('stock', '>', 0)
 				->firstOrFail();
 
 			$user = auth()->user();
@@ -166,17 +170,26 @@ class ProductsController extends Controller {
 				throw new \Exception('Product is out of stock');
 			}
 
-			// Check if user has enough credit
+			// Enhanced credit validation with detailed error message
 			if ($user->credit_balance < $product->price) {
+				$requiredAmount = $product->price;
+				$availableCredit = $user->credit_balance;
+				$difference = $requiredAmount - $availableCredit;
+
 				Log::warning('Insufficient credit for purchase', [
 					'user_id' => $user->id,
 					'product_id' => $product->id,
-					'required_amount' => $product->price,
-					'available_credit' => $user->credit_balance
+					'product_name' => $product->name,
+					'required_amount' => $requiredAmount,
+					'available_credit' => $availableCredit,
+					'difference' => $difference
 				]);
-				return redirect()->route('errors.insufficient_credit')
-					->with('required_amount', $product->price)
-					->with('available_credit', $user->credit_balance);
+
+				return view('products.insufficient_credit', [
+					'product' => $product,
+					'user_credit' => $availableCredit,
+					'additional_credit_needed' => $difference
+				]);
 			}
 
 			// Deduct credit and reduce stock
@@ -186,16 +199,25 @@ class ProductsController extends Controller {
 			$product->stock -= 1;
 			$product->save();
 
+			// Create purchase record using the model
+			ProductPurchase::create([
+				'user_id' => $user->id,
+				'product_id' => $product->id,
+				'price_paid' => $product->price,
+				'purchased_at' => now(),
+			]);
+
 			DB::commit();
 
 			Log::info('Product purchased successfully', [
 				'user_id' => $user->id,
 				'product_id' => $product->id,
-				'price' => $product->price
+				'price' => $product->price,
+				'remaining_credit' => $user->credit_balance
 			]);
 
 			return redirect()->route('products_list')
-				->with('success', 'Product purchased successfully!');
+				->with('success', 'Purchase successful!');
 		} catch (\Exception $e) {
 			DB::rollBack();
 			Log::error('Error purchasing product', [
@@ -205,5 +227,36 @@ class ProductsController extends Controller {
 			]);
 			return back()->with('error', 'Error purchasing product: ' . $e->getMessage());
 		}
+	}
+
+	public function manageStock(Request $request)
+	{
+		$query = Product::query();
+		
+		if ($request->has('search')) {
+			$search = $request->get('search');
+			$query->where(function($q) use ($search) {
+				$q->where('name', 'like', "%{$search}%")
+				  ->orWhere('code', 'like', "%{$search}%");
+			});
+		}
+		
+		$products = $query->paginate(10);
+		
+		return view('products.manage_stock', compact('products'));
+	}
+
+	public function updateStock(Request $request, Product $product)
+	{
+		$request->validate([
+			'stock' => 'required|integer|min:0',
+		]);
+		
+		$product->update([
+			'stock' => $request->stock
+		]);
+		
+		return redirect()->route('products.manage_stock')
+			->with('success', 'Stock updated successfully.');
 	}
 } 
