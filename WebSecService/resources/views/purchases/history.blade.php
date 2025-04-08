@@ -18,6 +18,13 @@
                         </div>
                     @endif
 
+                    @if(session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
                     @if($purchases->isEmpty())
                         <div class="alert alert-info">
                             <p class="mb-0">You haven't made any purchases yet.</p>
@@ -30,6 +37,8 @@
                                         <th>Date</th>
                                         <th>Product</th>
                                         <th>Price</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -38,6 +47,28 @@
                                             <td>{{ $purchase->purchased_at->format('M d, Y H:i') }}</td>
                                             <td>{{ $purchase->product->name }}</td>
                                             <td>${{ number_format($purchase->price_paid, 2) }}</td>
+                                            <td>
+                                                @if($purchase->refunded)
+                                                    <span class="badge bg-warning">Refunded</span>
+                                                    <small class="d-block text-muted">{{ $purchase->refunded_at->format('M d, Y H:i') }}</small>
+                                                @else
+                                                    <span class="badge bg-success">Active</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if(!$purchase->refunded)
+                                                    <form action="{{ route('purchases.refund', $purchase) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Are you sure you want to refund this purchase?')">
+                                                            <i class="fas fa-undo"></i> Refund
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button class="btn btn-secondary btn-sm" disabled>
+                                                        <i class="fas fa-undo"></i> Refunded
+                                                    </button>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>

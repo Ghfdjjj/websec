@@ -25,7 +25,7 @@ class ProductsController extends Controller {
 		$query = Product::query();
 
 		// Apply search filters
-		if ($request->has('keywords')) {
+		if ($request->filled('keywords')) {
 			$keywords = $request->keywords;
 			$query->where(function($q) use ($keywords) {
 				$q->where('name', 'like', "%{$keywords}%")
@@ -36,16 +36,28 @@ class ProductsController extends Controller {
 		}
 
 		// Apply price range filter
-		if ($request->has('min_price')) {
+		if ($request->filled('min_price')) {
 			$query->where('price', '>=', $request->min_price);
 		}
-		if ($request->has('max_price')) {
+		if ($request->filled('max_price')) {
 			$query->where('price', '<=', $request->max_price);
 		}
 
-		// Apply sorting
-		if ($request->has('order_by') && $request->has('order_direction')) {
-			$query->orderBy($request->order_by, $request->order_direction);
+		// Apply sorting - handle each parameter independently
+		$orderBy = $request->input('order_by');
+		$orderDirection = $request->input('order_direction');
+		
+		// If order_by is provided and valid, use it with default direction if needed
+		if ($orderBy && in_array($orderBy, ['name', 'price'])) {
+			// If order_direction is not provided or invalid, default to ASC
+			if (!$orderDirection || !in_array(strtoupper($orderDirection), ['ASC', 'DESC'])) {
+				$orderDirection = 'ASC';
+			}
+			$query->orderBy($orderBy, $orderDirection);
+		}
+		// If only order_direction is provided, sort by name by default
+		else if ($orderDirection && in_array(strtoupper($orderDirection), ['ASC', 'DESC'])) {
+			$query->orderBy('name', $orderDirection);
 		}
 
 		$products = $query->get();
@@ -79,9 +91,22 @@ class ProductsController extends Controller {
 		];
 
 		// Only validate photo if it's a new product or if a new photo is being uploaded
-		if (!$id || $request->hasFile('photo')) {
+		if (!$id) {
+			// For new products, photo is required
 			$rules['photo'] = 'required|image|mimes:jpeg,png,jpg,gif|max:2048';
+		} else if ($request->hasFile('photo')) {
+			// For existing products, photo is optional but must be valid if provided
+			$rules['photo'] = 'image|mimes:jpeg,png,jpg,gif|max:2048';
 		}
+
+		// Log request information for debugging
+		Log::info('Product save request', [
+			'is_new_product' => !$id,
+			'has_photo' => $request->hasFile('photo'),
+			'photo_valid' => $request->hasFile('photo') ? $request->file('photo')->isValid() : false,
+			'photo_mime' => $request->hasFile('photo') ? $request->file('photo')->getMimeType() : null,
+			'photo_size' => $request->hasFile('photo') ? $request->file('photo')->getSize() : null,
+		]);
 
 		$request->validate($rules);
 
@@ -93,9 +118,54 @@ class ProductsController extends Controller {
 
 			// Handle photo upload
 			if ($request->hasFile('photo')) {
+				// Ensure the images directory exists
+				$imagesPath = public_path('images');
+				if (!file_exists($imagesPath)) {
+					mkdir($imagesPath, 0755, true);
+				}
+
+				// Check if the directory is writable
+				if (!is_writable($imagesPath)) {
+					Log::error('Images directory is not writable', [
+						'path' => $imagesPath,
+						'permissions' => substr(sprintf('%o', fileperms($imagesPath)), -4)
+					]);
+					throw new \Exception('The images directory is not writable. Please check permissions.');
+				}
+
 				$photo = $request->file('photo');
+				
+				// Additional validation to ensure the file is a valid image
+				if (!$photo->isValid()) {
+					Log::error('Invalid photo file', [
+						'error' => $photo->getErrorMessage(),
+						'original_name' => $photo->getClientOriginalName(),
+						'mime_type' => $photo->getMimeType(),
+					]);
+					throw new \Exception('The uploaded file is not valid: ' . $photo->getErrorMessage());
+				}
+				
+				// Check if the file is an image
+				$mimeType = $photo->getMimeType();
+				$allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+				if (!in_array($mimeType, $allowedMimeTypes)) {
+					Log::error('Invalid image mime type', [
+						'mime_type' => $mimeType,
+						'original_name' => $photo->getClientOriginalName(),
+					]);
+					throw new \Exception('The uploaded file is not a valid image. Allowed types: jpeg, png, jpg, gif');
+				}
+				
 				$filename = time() . '.' . $photo->getClientOriginalExtension();
-				$photo->move(public_path('images'), $filename);
+				
+				// Log the upload attempt
+				Log::info('Attempting to upload photo', [
+					'filename' => $filename,
+					'path' => $imagesPath,
+					'original_name' => $photo->getClientOriginalName(),
+				]);
+				
+				$photo->move($imagesPath, $filename);
 				$product->photo = $filename;
 			}
 

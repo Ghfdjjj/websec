@@ -19,6 +19,8 @@ class ProductPurchase extends Model
         'product_id',
         'price_paid',
         'purchased_at',
+        'refunded',
+        'refunded_at',
     ];
 
     /**
@@ -28,6 +30,8 @@ class ProductPurchase extends Model
      */
     protected $casts = [
         'purchased_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'refunded' => 'boolean',
     ];
 
     /**

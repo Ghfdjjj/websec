@@ -14,8 +14,8 @@
     </div>
 @endif
 
-<form action="{{route('products_save', $product->id)}}" method="post">
-    {{ csrf_field() }}
+<form action="{{route('products_save', $product->id)}}" method="post" enctype="multipart/form-data">
+    @csrf
     @foreach($errors->all() as $error)
     <div class="alert alert-danger">
         <strong>Error!</strong> {{$error}}
@@ -55,8 +55,13 @@
             </div>
         </div>
         <div class="col-4">
-            <label for="photo" class="form-label">Photo URL:</label>
-            <input type="text" class="form-control" placeholder="Photo URL" name="photo" required value="{{$product->photo}}">
+            <label for="photo" class="form-label">Product Photo:</label>
+            <input type="file" class="form-control" name="photo" accept="image/jpeg,image/png,image/jpg,image/gif" {{ !$product->id ? 'required' : '' }}>
+            @if($product->photo)
+                <div class="form-text">
+                    <i class="fas fa-info-circle"></i> Current photo: {{ $product->photo }}
+                </div>
+            @endif
         </div>
     </div>
 

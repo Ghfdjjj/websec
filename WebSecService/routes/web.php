@@ -70,6 +70,9 @@ Route::middleware(['auth'])->group(function () {
     // Customer purchase history
     Route::get('/purchases/history', [PurchasesController::class, 'history'])->name('purchases.history');
     
+    // Customer refund route
+    Route::post('/purchases/{purchase}/refund', [PurchasesController::class, 'refund'])->name('purchases.refund');
+    
     // Employee view of customer purchase history
     Route::get('/purchases/customer/{user}', [PurchasesController::class, 'customerHistory'])
         ->name('purchases.customer_history')
