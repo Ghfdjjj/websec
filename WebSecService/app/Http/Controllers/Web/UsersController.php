@@ -279,7 +279,7 @@ class UsersController extends Controller {
 
         if(!auth()->user()->hasPermissionTo('delete_users')) abort(401);
 
-        //$user->delete();
+        $user->delete();
 
         return redirect()->route('users');
     }

@@ -29,7 +29,6 @@
           <th scope="col">Name</th>
           <th scope="col">Email</th>
           <th scope="col">Roles</th>
-          {{-- <th scope="col">Credit</th> --}}
           <th scope="col"></th>
         </tr>
       </thead>
@@ -43,7 +42,6 @@
             <span class="badge bg-primary">{{$role->name}}</span>
           @endforeach
         </td>
-        {{-- <td scope="col">{{$user->credit_balance}}</td> --}}
         <td scope="col">
           @can('edit_users')
           <a class="btn btn-primary" href='{{route('users_edit', [$user->id])}}'>Edit</a>
@@ -58,9 +56,6 @@
           <a class="btn btn-info" href='{{route('profile', [$user->id])}}'>Show Profile</a>
           @endif
 
-          {{-- @if(auth()->user()->hasAnyRole(['Admin', 'Employee']))
-          <a class="btn btn-danger" href='{{route('users.reset_credit', [$user->id])}}'>reset Balance</a>
-          @endif --}}
         </td>
       </tr>
       @endforeach
