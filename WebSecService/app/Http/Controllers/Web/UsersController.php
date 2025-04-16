@@ -10,9 +10,15 @@ use Spatie\Permission\Models\Permission;
 use DB;
 use Artisan;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
+use App\Models\User;
+use App\Mail\VerificationEmail;
+use App\Mail\ForgotPasswordEmail;
+use Carbon\Carbon;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 
 class UsersController extends Controller {
 
@@ -47,84 +53,62 @@ class UsersController extends Controller {
     }
 
     public function doRegister(Request $request) {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
 
-    	try {
-    		$this->validate($request, [
-	        'name' => ['required', 'string', 'min:5'],
-	        'email' => ['required', 'email', 'unique:users'],
-	        'password' => ['required', 'confirmed', Password::min(8)->numbers()->letters()->mixedCase()->symbols()],
-	    	]);
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
 
-            // Start a database transaction
-            DB::beginTransaction();
+        // Assign customer role to the new user
+        $user->assignRole('customer');
 
-            try {
-                $user = new User();
-                $user->name = $request->name;
-                $user->email = $request->email;
-                $user->password = bcrypt($request->password);
-                $user->save();
+        // Generate verification token and link
+        $token = Crypt::encryptString(json_encode([
+            'id' => $user->id,
+            'email' => $user->email
+        ]));
+        $link = route('verify', ['token' => $token]);
 
-                // Check if Customer role exists, if not create it
-                $customerRole = Role::firstOrCreate(['name' => 'Customer']);
+        // Send verification email
+        Mail::to($user->email)->send(new VerificationEmail($link, $user->name));
 
-                // Check if user already has the role to prevent duplicates
-                if (!$user->hasRole($customerRole)) {
-                    $user->assignRole($customerRole);
-                }
-
-                // Commit the transaction
-                DB::commit();
-
-                // Log successful registration
-                \Log::info('New user registered', [
-                    'user_id' => $user->id,
-                    'email' => $user->email,
-                    'role_assigned' => 'Customer'
-                ]);
-
-                return redirect('/')->with('success', 'Registration successful!');
-            } catch (\Exception $e) {
-                // Rollback the transaction on error
-                DB::rollBack();
-                
-                // Log the error
-                \Log::error('User registration failed', [
-                    'error' => $e->getMessage(),
-                    'email' => $request->email
-                ]);
-
-                return redirect()->back()
-                    ->withInput($request->input())
-                    ->withErrors('Registration failed. Please try again later.');
-            }
-    	}
-    	catch(\Exception $e) {
-            // Log validation error
-            \Log::warning('User registration validation failed', [
-                'error' => $e->getMessage(),
-                'email' => $request->email
-            ]);
-
-            return redirect()->back()
-                ->withInput($request->input())
-                ->withErrors('Invalid registration information.');
-    	}
+        return redirect('/')->with('success', 'Registration successful! Please check your email for verification.');
     }
 
     public function login(Request $request) {
         return view('users.login');
     }
 
-    public function doLogin(Request $request) {
-    	
-    	if(!Auth::attempt(['email' => $request->email, 'password' => $request->password]))
-            return redirect()->back()->withInput($request->input())->withErrors('Invalid login information.');
+    public function doLogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
+        ]);
 
         $user = User::where('email', $request->email)->first();
-        Auth::setUser($user);
 
-        return redirect('/');
+        if (!$user) {
+            return redirect()->back()->withInput($request->input())->withErrors(['email' => 'Invalid credentials']);
+        }
+
+        if (!$user->email_verified_at) {
+            return redirect()->back()
+                ->withInput($request->input())
+                ->withErrors(['email' => 'Your email is not verified. Please check your email for the verification link.']);
+        }
+
+        if (Auth::attempt($request->only('email', 'password'))) {
+            return redirect()->intended('/');
+        }
+
+        return redirect()->back()->withInput($request->input())->withErrors(['email' => 'Invalid credentials']);
     }
 
     public function doLogout(Request $request) {
@@ -317,5 +301,134 @@ class UsersController extends Controller {
         $user->save();
 
         return redirect(route('profile', ['user'=>$user->id]));
+    }
+
+    public function verify(Request $request)
+    {
+        try {
+            $decryptedData = json_decode(Crypt::decryptString($request->token), true);
+            
+            if (!isset($decryptedData['id'])) {
+                abort(401, 'Invalid verification token');
+            }
+
+            $user = User::find($decryptedData['id']);
+            
+            if (!$user) {
+                abort(401, 'User not found');
+            }
+
+            if ($user->email_verified_at) {
+                return view('users.verified', compact('user'))->with('message', 'Email already verified');
+            }
+
+            $user->email_verified_at = Carbon::now();
+            $user->save();
+
+            return view('users.verified', compact('user'));
+        } catch (\Exception $e) {
+            abort(401, 'Invalid verification token');
+        }
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        return view('users.forgot_password');
+    }
+
+    public function sendResetLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return redirect()->back()->with('error', 'Email not found.');
+        }
+
+        // Generate reset token
+        $token = Crypt::encryptString(json_encode([
+            'id' => $user->id,
+            'email' => $user->email,
+            'expires' => now()->addHour()->timestamp
+        ]));
+        
+        $link = route('reset_password', ['token' => $token]);
+
+        // Log the reset link for development
+        Log::info('Password reset link generated', [
+            'email' => $user->email,
+            'reset_link' => $link
+        ]);
+
+        // Send reset email
+        Mail::to($user->email)->send(new ForgotPasswordEmail($link, $user->name));
+
+        return redirect()->back()->with('success', 'Password reset link has been sent to your email.');
+    }
+
+    public function resetPassword(Request $request)
+    {
+        try {
+            $decryptedData = json_decode(Crypt::decryptString($request->token), true);
+            
+            if (!isset($decryptedData['id']) || !isset($decryptedData['expires'])) {
+                return redirect()->route('login')->with('error', 'Invalid reset token.');
+            }
+
+            // Check if token is expired
+            if (now()->timestamp > $decryptedData['expires']) {
+                return redirect()->route('login')->with('error', 'Reset link has expired.');
+            }
+
+            $user = User::find($decryptedData['id']);
+            
+            if (!$user) {
+                return redirect()->route('login')->with('error', 'User not found.');
+            }
+
+            return view('users.reset_password', ['token' => $request->token]);
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('error', 'Invalid reset token.');
+        }
+    }
+
+    public function updatePassword(Request $request)
+    {
+        try {
+            $decryptedData = json_decode(Crypt::decryptString($request->token), true);
+            
+            if (!isset($decryptedData['id']) || !isset($decryptedData['expires'])) {
+                return redirect()->route('login')->with('error', 'Invalid reset token.');
+            }
+
+            // Check if token is expired
+            if (now()->timestamp > $decryptedData['expires']) {
+                return redirect()->route('login')->with('error', 'Reset link has expired.');
+            }
+
+            $request->validate([
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            $user = User::find($decryptedData['id']);
+            
+            if (!$user) {
+                return redirect()->route('login')->with('error', 'User not found.');
+            }
+
+            // Preserve the email verification status
+            $emailVerifiedAt = $user->email_verified_at;
+
+            $user->password = Hash::make($request->password);
+            $user->email_verified_at = $emailVerifiedAt; // Restore the verification status
+            $user->save();
+
+            return redirect()->route('login')->with('success', 'Password has been reset successfully.');
+        } catch (\Exception $e) {
+            return redirect()->route('login')->with('error', 'Invalid reset token.');
+        }
     }
 } 

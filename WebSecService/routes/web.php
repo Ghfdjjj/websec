@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\ProductsController;
 use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\CreditController;
 use App\Http\Controllers\Web\PurchasesController;
+use App\Http\Controllers\Web\GoogleAuthController;
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -86,3 +87,16 @@ Route::middleware(['auth', 'role:employee,admin'])->group(function () {
     Route::get('/products/manage-stock', [ProductsController::class, 'manageStock'])->name('products.manage_stock');
     Route::post('/products/{product}/update-stock', [ProductsController::class, 'updateStock'])->name('products.update_stock');
 });
+
+// Email verification route
+Route::get('verify', [UsersController::class, 'verify'])->name('verify');
+
+// Password reset routes
+Route::get('forgot-password', [UsersController::class, 'forgotPassword'])->name('forgot_password');
+Route::post('send-reset-link', [UsersController::class, 'sendResetLink'])->name('send_reset_link');
+Route::get('reset-password', [UsersController::class, 'resetPassword'])->name('reset_password');
+Route::post('reset-password', [UsersController::class, 'updatePassword'])->name('update_password');
+
+// Google OAuth routes
+Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
