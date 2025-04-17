@@ -55,6 +55,7 @@
           @if(auth()->user()->hasAnyRole(['Admin', 'Employee']))
           <a class="btn btn-info" href='{{route('profile', [$user->id])}}'>Show Profile</a>
           @endif
+
         </td>
       </tr>
       @endforeach

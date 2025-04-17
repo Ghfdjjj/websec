@@ -218,7 +218,7 @@ class ProductsController extends Controller {
 		}
 	}
 
-	public function buy($id)
+	public function buy(Product $product)
 	{
 		// Check if user is Customer
 		if (!auth()->user()->hasRole('Customer')) {
@@ -228,17 +228,12 @@ class ProductsController extends Controller {
 		try {
 			DB::beginTransaction();
 
-			// Get the product with proper validation
-			$product = Product::where('id', $id)
-				->where('stock', '>', 0)
-				->firstOrFail();
-
-			$user = auth()->user();
-
 			// Check if product is in stock
 			if ($product->stock <= 0) {
 				throw new \Exception('Product is out of stock');
 			}
+
+			$user = auth()->user();
 
 			// Enhanced credit validation with detailed error message
 			if ($user->credit_balance < $product->price) {
@@ -293,7 +288,7 @@ class ProductsController extends Controller {
 			Log::error('Error purchasing product', [
 				'error' => $e->getMessage(),
 				'user_id' => auth()->id(),
-				'product_id' => $id
+				'product_id' => $product->id
 			]);
 			return back()->with('error', 'Error purchasing product: ' . $e->getMessage());
 		}

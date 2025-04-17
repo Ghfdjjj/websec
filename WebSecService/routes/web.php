@@ -67,12 +67,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Customer route to view their own credit
     Route::get('/my-credit', [CreditController::class, 'show'])->name('credit.show');
-    
+
+    Route::get('/reset_credit/{user}', [CreditController::class, 'resetCreditForm'])->name('users.reset_credit');
+
     // Customer purchase history
     Route::get('/purchases/history', [PurchasesController::class, 'history'])->name('purchases.history');
-    
-    // Customer refund route
-    Route::post('/purchases/{purchase}/refund', [PurchasesController::class, 'refund'])->name('purchases.refund');
     
     // Employee view of customer purchase history
     Route::get('/purchases/customer/{user}', [PurchasesController::class, 'customerHistory'])
