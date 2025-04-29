@@ -67,9 +67,14 @@
 
                     <div class="row mt-4">
                         <div class="col-md-8 offset-md-4">
-                            <a href="{{ route('google.login') }}" class="btn btn-danger">
-                                <i class="fab fa-google me-2"></i> {{ __('Login with Google') }}
-                            </a>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('google.login') }}" class="btn btn-danger">
+                                    <i class="fab fa-google me-2"></i> {{ __('Login with Google') }}
+                                </a>
+                                <a href="{{ route('facebook.login') }}" class="btn btn-primary">
+                                    <i class="fab fa-facebook me-2"></i> {{ __('Login with Facebook') }}
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

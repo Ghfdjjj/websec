@@ -6,6 +6,7 @@ use App\Http\Controllers\Web\UsersController;
 use App\Http\Controllers\Web\CreditController;
 use App\Http\Controllers\Web\PurchasesController;
 use App\Http\Controllers\Web\GoogleAuthController;
+use App\Http\Controllers\Web\FacebookAuthController;
 
 Route::get('register', [UsersController::class, 'register'])->name('register');
 Route::post('register', [UsersController::class, 'doRegister'])->name('do_register');
@@ -100,8 +101,8 @@ Route::post('reset-password', [UsersController::class, 'updatePassword'])->name(
 Route::get('auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
 
-
-
+Route::get('auth/facebook', [FacebookAuthController::class, 'redirectToFacebook'])->name('facebook.login');
+Route::get('auth/facebook/callback', [FacebookAuthController::class, 'handleFacebookCallback'])->name('facebook.callback');
 
 Route::get('sqli', function(Request $request){
     $table = $request->query('table');
